@@ -205,3 +205,64 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ============================================
+# RAG Assistant Project Specific
+# ============================================
+
+# Uploaded documents (user data)
+data/uploads/*
+!data/uploads/.gitkeep
+
+# ChromaDB vector database
+data/chroma_db/*
+!data/chroma_db/.gitkeep
+
+# Temporary test files
+test_document.pdf
+test_document.txt
+test_*.pdf
+test_*.txt
+sample_*.pdf
+sample_*.txt
+
+# Model cache
+.cache/
+models/
+
+# LangChain cache
+.langchain/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+
+# API keys backup
+*.key
+api_keys.txt
+
+# Logs
+logs/
+*.log
+
+# macOS
+.DS_Store
+
+# IDEs (дополнительно)
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Streamlit
+.streamlit/
+
+# Jupyter (если будете использовать)
+*.ipynb_checkpoints
+
+# Large files (PDF examples)
+examples/*.pdf
+examples/*.docx
