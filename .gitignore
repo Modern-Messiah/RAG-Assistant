@@ -266,3 +266,21 @@ logs/
 # Large files (PDF examples)
 examples/*.pdf
 examples/*.docx
+
+# ============================================
+# ChromaDB / Vector store artifacts (ALL)
+# ============================================
+
+# Any persisted ChromaDB data
+data/**/chroma.sqlite3
+data/**/index/
+data/**/.chroma/
+data/**/*.bin
+data/**/test_chroma_db/
+data/**/test_pipeline/
+
+# SQLite
+*.sqlite3
+
+# Binary vector data
+*.bin
