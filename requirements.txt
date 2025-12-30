@@ -1,30 +1,27 @@
-# LangChain & AI
-langchain==0.1.0
-langchain-openai==0.0.5
-langchain-community==0.0.13
+# LangChain & AI (updated versions)
+langchain==0.1.20
+langchain-community==0.0.38
+langchain-openai==0.0.8
 
 # Vector Database
-chromadb==0.4.22
+chromadb==0.4.24
 
 # Document Processing
-pypdf==4.0.1
+pypdf==4.2.0
 python-docx==1.1.0
 
 # API
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-python-multipart==0.0.6
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9
 
 # Frontend
-streamlit==1.30.0
+streamlit==1.34.0
 
 # Utils
-python-dotenv==1.0.0
-pydantic==2.5.3
-pydantic-settings==2.1.0
+python-dotenv==1.0.1
+pydantic==2.7.1
+pydantic-settings==2.2.1
 
-# OpenAI
-openai==1.10.0
-
-# Optional: DeepSeek
-# deepseek-api==0.1.0
+# OpenAI (compatible version)
+openai==1.30.1
