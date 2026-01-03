@@ -46,10 +46,16 @@ async def upload_document(file: UploadFile = File(...)):
     docs = loader.load_document(file_path)
     chunks = chunker.split_documents(docs)
 
-    if os.path.exists(VECTOR_DIR) and os.listdir(VECTOR_DIR):
+    try:
         vectorstore = embeddings.load_vectorstore(COLLECTION_NAME)
-        embeddings.add_documents(chunks)
-    else:
+
+    
+        if vectorstore._collection.count() == 0:
+            vectorstore = embeddings.create_vectorstore(chunks, COLLECTION_NAME)
+        else:
+            embeddings.add_documents(chunks)
+
+    except Exception:
         vectorstore = embeddings.create_vectorstore(chunks, COLLECTION_NAME)
 
     rag_chain = RAGChain(vectorstore)
@@ -58,6 +64,7 @@ async def upload_document(file: UploadFile = File(...)):
         "message": "Document processed successfully",
         "chunks": len(chunks)
     }
+
 
 
 
