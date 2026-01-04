@@ -3,41 +3,83 @@ import requests
 
 API_URL = "http://127.0.0.1:8000"
 
+# =========================
+# Page config
+# =========================
 st.set_page_config(
     page_title="RAG Assistant",
     page_icon="📄",
-    layout="centered"
+    layout="wide"
 )
 
+# =========================
+# Custom CSS
+# =========================
+st.markdown("""
+<style>
+.answer-box {
+    background-color: #0f172a;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+}
+.source-box {
+    background-color: #020617;
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 4px solid #38bdf8;
+    margin-bottom: 10px;
+}
+small {
+    color: #94a3b8;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =========================
+# Header
+# =========================
 st.title("📄 RAG Assistant")
-st.caption("Upload documents and ask questions using RAG")
+st.caption("Upload documents and ask questions using Retrieval-Augmented Generation")
 
-# --- Upload section ---
-st.header("1️⃣ Upload document")
+# =========================
+# Sidebar — Upload
+# =========================
+with st.sidebar:
+    st.header("📎 Upload documents")
 
-uploaded_file = st.file_uploader(
-    "Upload TXT or PDF",
-    type=["txt", "pdf"]
+    uploaded_files = st.file_uploader(
+        "Upload TXT or PDF files",
+        type=["txt", "pdf"],
+        accept_multiple_files=True
+    )
+
+    if uploaded_files:
+        for file in uploaded_files:
+            with st.spinner(f"Processing {file.name}..."):
+                response = requests.post(
+                    f"{API_URL}/upload",
+                    files={"file": file}
+                )
+
+            if response.status_code == 200:
+                st.success(f"{file.name} uploaded")
+            else:
+                st.error(response.text)
+
+# =========================
+# Main — Question
+# =========================
+st.subheader("💬 Ask a question")
+
+question = st.text_input(
+    "Type your question (English or Russian)",
+    placeholder="What is RAG?"
 )
 
-if uploaded_file:
-    with st.spinner("Uploading and processing document..."):
-        response = requests.post(
-            f"{API_URL}/upload",
-            files={"file": uploaded_file}
-        )
+ask_btn = st.button("Ask", type="primary")
 
-    if response.status_code == 200:
-        st.success("Document processed successfully")
-    else:
-        st.error(response.text)
-
-# --- Query section ---
-st.header("2️⃣ Ask a question")
-
-question = st.text_input("Your question")
-
-if st.button("Ask"):
+if ask_btn:
     if not question:
         st.warning("Please enter a question")
     else:
@@ -47,16 +89,34 @@ if st.button("Ask"):
                 json={"question": question}
             )
 
-        if response.status_code == 200:
+        if response.status_code != 200:
+            st.error(response.text)
+        else:
             data = response.json()
 
-            st.subheader("Answer")
-            st.write(data["answer"])
+            # =========================
+            # Answer
+            # =========================
+            st.subheader("🧠 Answer")
+            st.markdown(
+                f"<div class='answer-box'>{data['answer']}</div>",
+                unsafe_allow_html=True
+            )
 
-            st.subheader("Sources")
-            for src in data["sources"]:
-                st.markdown(
-                    f"- **{src['source']}**: {src['preview']}"
-                )
-        else:
-            st.error(response.text)
+            # =========================
+            # Sources
+            # =========================
+            if data["sources"]:
+                st.subheader("📚 Sources")
+
+                for src in data["sources"]:
+                    st.markdown(
+                        f"""
+                        <div class="source-box">
+                        <b>{src['source']}</b><br>
+                        <small>{src['preview']}</small>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
