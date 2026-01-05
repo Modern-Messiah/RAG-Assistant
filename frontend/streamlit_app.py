@@ -17,51 +17,97 @@ st.set_page_config(
 # =========================
 st.markdown("""
 <style>
+/* Global text size */
+html, body, [class*="css"] {
+    font-size: 20px;
+}
+
+/* Inputs & buttons */
+input, textarea, button {
+    font-size: 20px !important;
+}
+
+/* Answer box */
 .answer-box {
     background-color: #0f172a;
-    padding: 20px;
+    padding: 22px;
     border-radius: 12px;
     border: 1px solid #334155;
+    font-size: 20px;
+    line-height: 1.65;
 }
+
+/* Source cards */
 .source-box {
     background-color: #020617;
-    padding: 12px;
+    padding: 14px;
     border-radius: 8px;
     border-left: 4px solid #38bdf8;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    font-size: 20px;
 }
+
+/* Small text */
 small {
     color: #94a3b8;
+    font-size: 20px;
 }
+
+/* Sidebar text */
+section[data-testid="stSidebar"] * {
+    font-size: 20px;
+}
+
+/* Divider */
+hr {
+    border: none;
+    border-top: 1px solid #1e293b;
+    margin: 24px 0;
+}
+
+/* Caption under title */
+[data-testid="stCaptionContainer"] p {
+    font-size: 20px !important;
+    line-height: 1.6;
+    color: #cbd5f5;
+}
+
+/* Input labels (e.g. "Type your question") */
+label p {
+    font-size: 20px !important;
+    font-weight: 500;
+}
+
+/* Text input itself */
+input[type="text"] {
+    font-size: 20px !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
+
 
 # =========================
 # Header
 # =========================
 st.title("📄 RAG Assistant")
-st.caption("Upload documents and ask questions using Retrieval-Augmented Generation")
+st.caption(
+    "Upload your documents and ask questions based **only on their content** "
+    "(Retrieval-Augmented Generation)"
+)
+
+st.markdown("<hr>", unsafe_allow_html=True)
 
 # =========================
-# Sidebar — Upload
+# Sidebar
 # =========================
 with st.sidebar:
     st.header("📎 Upload documents")
 
     uploaded_files = st.file_uploader(
-        "Upload TXT or PDF files",
+        "TXT or PDF files",
         type=["txt", "pdf"],
         accept_multiple_files=True
-    )
-
-    st.divider()
-
-    st.header("⚙️ Settings")
-
-    language = st.radio(
-        "Answer language",
-        ["Auto", "English", "Русский"],
-        index=0
     )
 
     if uploaded_files:
@@ -73,12 +119,39 @@ with st.sidebar:
                 )
 
             if response.status_code == 200:
-                st.success(f"{file.name} uploaded")
+                st.success(f"{file.name} indexed")
             else:
                 st.error(response.text)
 
+    st.divider()
+
+    st.header("⚙️ Settings")
+
+    language = st.radio(
+        "Answer language",
+        ["Auto", "English", "Русский"],
+        index=0
+    )
+
+    st.divider()
+
+    st.info(
+        "📌 **Limits**\n\n"
+        "- Any number of documents\n"
+        "- Up to **200 MB per file**\n"
+        "- Supported formats: **TXT, PDF**"
+    )
+
 # =========================
-# Main — Question
+# Main — Status
+# =========================
+if uploaded_files:
+    st.success(f"📚 {len(uploaded_files)} document(s) indexed")
+else:
+    st.warning("No documents uploaded yet")
+
+# =========================
+# Question input
 # =========================
 st.subheader("💬 Ask a question")
 
@@ -87,14 +160,22 @@ question = st.text_input(
     placeholder="What is RAG?"
 )
 
-ask_btn = st.button("Ask", type="primary")
+ask_btn = st.button("🔍 Ask", type="primary")
 
+# =========================
+# Ask logic
+# =========================
 if ask_btn:
-    if not question:
+    if not uploaded_files:
+        st.warning("Please upload at least one document first")
+        st.stop()
+
+    if not question.strip():
         st.warning("Please enter a question")
-    else:
-        with st.spinner("Thinking..."):
-            response = requests.post(
+        st.stop()
+
+    with st.spinner("Thinking..."):
+        response = requests.post(
             f"{API_URL}/query",
             json={
                 "question": question,
@@ -102,35 +183,36 @@ if ask_btn:
             }
         )
 
+    if response.status_code != 200:
+        st.error(response.text)
+    else:
+        data = response.json()
 
-        if response.status_code != 200:
-            st.error(response.text)
-        else:
-            data = response.json()
+        # =========================
+        # Answer
+        # =========================
+        st.subheader("🧠 Answer")
+        st.markdown(
+            f"<div class='answer-box'>{data['answer']}</div>",
+            unsafe_allow_html=True
+        )
 
-            # =========================
-            # Answer
-            # =========================
-            st.subheader("🧠 Answer")
-            st.markdown(
-                f"<div class='answer-box'>{data['answer']}</div>",
-                unsafe_allow_html=True
-            )
+        # =========================
+        # Sources
+        # =========================
+        if data.get("sources"):
+            st.subheader("📚 Sources")
+            st.caption("Sources used to generate the answer")
 
-            # =========================
-            # Sources
-            # =========================
-            if data["sources"]:
-                st.subheader("📚 Sources")
-
-                for src in data["sources"]:
-                    st.markdown(
-                        f"""
-                        <div class="source-box">
+            for src in data["sources"]:
+                st.markdown(
+                    f"""
+                    <div class="source-box">
                         <b>{src['source']}</b><br>
                         <small>{src['preview']}</small>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
 
