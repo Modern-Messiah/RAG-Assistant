@@ -7,31 +7,35 @@ from langchain.schema import Document
 from openai import OpenAI
 import httpx
 import os
+import re
 
+# =========================
+# Language rules
+# =========================
 LANG_RULES = {
     "English": "Answer strictly in English.",
     "Русский": "Отвечай строго на русском языке.",
+    "Қазақша": "Жауапты қатаң түрде қазақ тілінде бер.",
     "Français": "Réponds strictement en français.",
     "Deutsch": "Antworte ausschließlich auf Deutsch.",
     "Español": "Responde estrictamente en español.",
-    "中文": "请严格使用简体中文回答。"
+    "中文": "请严格使用简体中文回答。",
+    "日本語": "必ず日本語で回答してください。"
 }
 
 
 # =========================
-# System Prompt
+# System prompt (base)
 # =========================
 SYSTEM_PROMPT = """
-You are a Retrieval-Augmented Generation (RAG) assistant.
+You are a professional Retrieval-Augmented Generation (RAG) assistant.
 
 Rules:
-- Answer ONLY using the provided context
-- If the user asks in Russian, answer in Russian
-- If the user asks in English, answer in English
-- If the context is in English and the question is in Russian, translate the answer
-- If the answer is not in the context, say that you don't know
+- Use ONLY the provided context
 - Do NOT hallucinate
-- Cite sources using [number]
+- Do NOT include citations like [1], [2] in the answer text
+- Sources will be shown separately
+- If the answer is not present in the context, say you don't know
 """
 
 
@@ -48,7 +52,6 @@ class RAGChain:
         self.vectorstore = vectorstore
         self.top_k = top_k
 
-        # OpenAI client (without proxy)
         self.client = OpenAI(
             http_client=httpx.Client(trust_env=False)
         )
@@ -62,13 +65,19 @@ class RAGChain:
     def _build_context(self, docs: List[Document]) -> str:
         context_parts = []
 
-        for i, doc in enumerate(docs, start=1):
+        for doc in docs:
             source = doc.metadata.get("source", "unknown")
             context_parts.append(
-                f"[{i}] Source: {source}\n{doc.page_content}"
+                f"Source: {source}\n{doc.page_content}"
             )
 
         return "\n\n".join(context_parts)
+
+    # =========================
+    # Remove [1], [2], etc.
+    # =========================
+    def _strip_citations(self, text: str) -> str:
+        return re.sub(r"\[\d+\]", "", text).strip()
 
     # =========================
     # Main RAG method
@@ -94,26 +103,22 @@ class RAGChain:
         else:
             lang_rule = LANG_RULES.get(language, "")
 
-
         system_prompt = f"""
-    You are a professional RAG assistant.
+{SYSTEM_PROMPT}
 
-    Rules:
-    - Use ONLY the provided context
-    - Do NOT hallucinate
-    - Cite sources using [number]
-    - {lang_rule}
-    """
+Language rule:
+- {lang_rule}
+"""
 
         user_prompt = f"""
-    Context:
-    {context}
+Context:
+{context}
 
-    Question:
-    {question}
+Question:
+{question}
 
-    Answer:
-    """
+Answer:
+"""
 
         response = self.client.chat.completions.create(
             model=self.model,
@@ -124,8 +129,12 @@ class RAGChain:
             temperature=self.temperature,
         )
 
-        answer = response.choices[0].message.content.strip()
+        raw_answer = response.choices[0].message.content.strip()
+        answer = self._strip_citations(raw_answer)
 
+        # =========================
+        # Collect unique sources
+        # =========================
         sources = []
         seen = set()
         sid = 1
@@ -135,6 +144,7 @@ class RAGChain:
             if src in seen:
                 continue
             seen.add(src)
+
             sources.append({
                 "id": sid,
                 "source": src,

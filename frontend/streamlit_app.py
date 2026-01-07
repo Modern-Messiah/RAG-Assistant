@@ -132,9 +132,11 @@ with st.sidebar:
         "Auto",
         "English",
         "Русский",
+        "Қазақша",
         "Français",
         "Deutsch",
         "Español",
+        "日本語",
         "中文"
     ],
     index=0
