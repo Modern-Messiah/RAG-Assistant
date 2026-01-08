@@ -1,9 +1,10 @@
-Production-ready RAG (Retrieval-Augmented Generation) assistant for querying
-multiple documents with source attribution.
+A production-ready, multi-language Retrieval-Augmented Generation (RAG) assistant
+designed for querying multiple documents with accurate source attribution.
 
-Supports PDF/TXT upload, multilingual questions (English/Russian),
-semantic search with ChromaDB, and language-aware answer generation.
+The system supports PDF/TXT uploads, multilingual questions and answers
+(English, Russian, French, German, Spanish, Kazakh, Japanese, Chinese),
+semantic search powered by ChromaDB, and strict language-aware answer generation.
 
-Includes a FastAPI backend with a Streamlit web interface.
-Designed with a modular architecture to support additional clients,
-including a Telegram bot.
+Built with a modular FastAPI backend and a responsive Streamlit web interface.
+Designed as a SaaS-ready architecture with support for additional clients,
+including a planned Telegram bot integration.
